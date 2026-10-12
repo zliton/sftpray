@@ -1,0 +1,58 @@
+name: Release sftpray
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    name: Build & Release (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            artifact_name: libsftpray.so
+            asset_name: libsftpray-linux-x86_64.so
+          - os: windows-latest
+            artifact_name: sftpray.dll
+            asset_name: sftpray-windows-x86_64.dll
+          - os: macos-latest
+            artifact_name: libsftpray.dylib
+            asset_name: libsftpray-macos-universal.dylib
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install cbindgen
+        run: cargo install cbindgen
+
+      - name: Generate C header
+        run: |
+          mkdir -p include
+          cbindgen --config cbindgen.toml --crate sftpray --output include/sftpray.h
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Prepare artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp target/release/${{ matrix.artifact_name }} dist/${{ matrix.asset_name }}
+          cp include/sftpray.h dist/sftpray.h
+
+      - name: Upload Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/${{ matrix.asset_name }}
+            dist/sftpray.h
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
