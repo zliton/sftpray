@@ -1,0 +1,13 @@
+[package]
+name = "sftpray"
+version = "0.1.0"
+edition = "2024"
+
+[lib]
+name = "sftpray"
+crate-type = ["lib", "cdylib"]
+
+[dependencies]
+russh = "0.64.1"
+russh-sftp = "3.0.1"
+tokio = { version = "1.53.2", features = ["full"] }
