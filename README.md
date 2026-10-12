@@ -1,5 +1,3 @@
----
-
 # sftpray
 
 > **High-performance, memory-safe SFTP client library** built with Rust (`russh` & `russh_sftp`), featuring an $O(1)$ constant memory footprint and cross-language support via FFI.
