@@ -302,3 +302,69 @@ pub extern "C" fn sftp_client_rename(
         Err(code) => code,
     }
 }
+
+#[unsafe(no_mangle)]
+pub extern "C" fn sftp_client_stat(
+    handle: *mut SftpClientHandle,
+    path: *const c_char,
+    size_out: *mut c_longlong,
+    is_dir_out: *mut i32,
+    permissions_out: *mut u32,
+    uid_out: *mut u32,
+    gid_out: *mut u32,
+    mtime_out: *mut u64,
+) -> i32 {
+    if handle.is_null()
+        || path.is_null()
+        || size_out.is_null()
+        || is_dir_out.is_null()
+        || permissions_out.is_null()
+        || uid_out.is_null()
+        || gid_out.is_null()
+        || mtime_out.is_null()
+    {
+        return -1;
+    }
+
+    let client = unsafe { &*handle };
+    let path_str = unsafe { CStr::from_ptr(path).to_str().unwrap_or("") };
+
+    let result = client.rt.block_on(async {
+        let metadata = client.sftp.metadata(path_str).await.map_err(|e| {
+            eprintln!("Failed to get metadata for '{}': {:?}", path_str, e);
+            -2
+        })?;
+
+        let size = metadata.len() as c_longlong;
+        let is_dir = if metadata.is_dir() { 1 } else { 0 };
+
+        let permissions = metadata.permissions.unwrap_or(0);
+        let uid = metadata.uid.unwrap_or(0);
+        let gid = metadata.gid.unwrap_or(0);
+        let mtime = metadata.mtime.unwrap_or(0) as u64;
+
+        Ok::<(c_longlong, i32, u32, u32, u32, u64), i32>((
+            size,
+            is_dir,
+            permissions,
+            uid,
+            gid,
+            mtime,
+        ))
+    });
+
+    match result {
+        Ok((sz, dir_flag, perm, u, g, mt)) => {
+            unsafe {
+                *size_out = sz;
+                *is_dir_out = dir_flag;
+                *permissions_out = perm;
+                *uid_out = u;
+                *gid_out = g;
+                *mtime_out = mt;
+            }
+            0
+        }
+        Err(code) => code,
+    }
+}
