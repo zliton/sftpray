@@ -35,7 +35,6 @@ jobs:
 
       - name: Generate C header
         run: |
-          mkdir -p include
           cbindgen --config cbindgen.toml --crate sftpray --output include/sftpray.h
 
       - name: Build release binary
