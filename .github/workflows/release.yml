@@ -37,7 +37,7 @@ jobs:
         run: |
           cbindgen --config cbindgen.toml --crate sftpray --output include/sftpray.h
 
-      - name: Build release binary
+      - name: Build release binarys
         run: cargo build --release
 
       - name: Prepare artifacts
